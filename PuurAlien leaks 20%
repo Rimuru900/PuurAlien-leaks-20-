@@ -1,0 +1,158 @@
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Parent GUI setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PuurAlien"
+ScreenGui.ResetOnSpawn = false -- Ensure GUI persists after respawn
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0.6, 0, 0.8, 0)
+MainFrame.Position = UDim2.new(0.2, 0, 0.1, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Toggle Button
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0.15, 0, 0.1, 0)
+ToggleButton.Position = UDim2.new(0.05, 0, 0.05, 0)
+ToggleButton.Text = "Alien"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ToggleButton.TextColor3 = Color3.new(0, 0, 0, 0)
+ToggleButton.Font = Enum.Font.SourceSansBold
+ToggleButton.TextSize = 20
+ToggleButton.Parent = ScreenGui
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+ToggleButton.TextScaled = true
+
+-- Toggle functionality for Main Frame
+ToggleButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- Helper function to create section labels
+local function createSectionLabel(text, position)
+    local label = Instance.new("TextLabel")
+    label.Text = text
+    label.Size = UDim2.new(0.9, 0, 0.05, 0)
+    label.Position = position
+    label.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 18
+    label.Parent = MainFrame
+end
+
+-- Helper function to create toggle buttons
+local function createToggleButton(text, position, callback)
+    local button = Instance.new("TextButton")
+    button.Text = text
+    button.Size = UDim2.new(0.9, 0, 0.05, 0)
+    button.Position = position
+    button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Font = Enum.Font.SourceSansBold
+    button.TextSize = 16
+    button.Parent = MainFrame
+
+    local enabled = false
+    button.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        button.BackgroundColor3 = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        callback(enabled)
+    end)
+end
+
+-- TARGET AIM SECTION
+createSectionLabel("Target Aim", UDim2.new(0.05, 0, 0.05, 0))
+
+-- Target Aim Toggle
+local TargetAimEnabled = false
+createToggleButton("Toggle Target Aim", UDim2.new(0.05, 0, 0.12, 0), function(state)
+    TargetAimEnabled = state
+end)
+
+-- Prediction Slider
+local Prediction = 0.1
+local JumpOffset = 0
+local Smoothness = 0.1
+
+-- GUI for Prediction, Jump Offset, and Smoothness
+local function createSlider(labelText, position, min, max, default, callback)
+    local label = Instance.new("TextLabel")
+    label.Text = labelText .. ": " .. default
+    label.Size = UDim2.new(0.9, 0, 0.05, 0)
+    label.Position = position
+    label.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSansBold
+    label.TextSize = 14
+    label.Parent = MainFrame
+
+    local slider = Instance.new("TextBox")
+    slider.Size = UDim2.new(0.3, 0, 0.05, 0)
+    slider.Position = position + UDim2.new(0.6, 0, 0, 0)
+    slider.Text = tostring(default)
+    slider.Parent = MainFrame
+
+    slider.FocusLost:Connect(function()
+        local value = tonumber(slider.Text)
+        if value and value >= min and value <= max then
+            label.Text = labelText .. ": " .. value
+            callback(value)
+        else
+            slider.Text = tostring(default)
+        end
+    end)
+end
+
+-- Prediction Slider
+createSlider("Prediction", UDim2.new(0.05, 0, 0.19, 0), 0, 1, Prediction, function(value)
+    Prediction = value
+end)
+
+-- Jump Offset Slider
+createSlider("Jump Offset", UDim2.new(0.05, 0, 0.26, 0), -10, 10, JumpOffset, function(value)
+    JumpOffset = value
+end)
+
+-- Smoothness Slider
+createSlider("Smoothness", UDim2.new(0.05, 0, 0.33, 0), 0, 1, Smoothness, function(value)
+    Smoothness = value
+end)
+
+-- Function to get closest target (excluding local player)
+local function getClosestTarget()
+    local closestDist, closestPlayer = math.huge, nil
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            if dist < closestDist then
+                closestDist = dist
+                closestPlayer = player
+            end
+        end
+    end
+    return closestPlayer
+end
+
+-- Target Aim Logic
+RunService.RenderStepped:Connect(function()
+    if TargetAimEnabled then
+        local target = getClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local aimPos = target.Character.HumanoidRootPart.Position + Vector3.new(0, JumpOffset, 0) + target.Character.HumanoidRootPart.Velocity * Prediction
+            local currentPos = LocalPlayer.Character.HumanoidRootPart.CFrame.Position
+            local smoothAim = currentPos:Lerp(aimPos, Smoothness)
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(smoothAim, aimPos)
+        end
+    end
+end)
