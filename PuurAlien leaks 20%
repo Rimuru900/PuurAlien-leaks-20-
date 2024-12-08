@@ -19,13 +19,22 @@ MainFrame.Parent = ScreenGui
 MainFrame.Active = true
 MainFrame.Draggable = true
 
--- Toggle Button
+-- Scrolling Frame for Target Aim and Killbot sections
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Size = UDim2.new(0.5, 0, 1, 0)
+ScrollingFrame.Position = UDim2.new(0, 0, 0, 0)
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Adjust as needed
+ScrollingFrame.ScrollBarThickness = 10
+ScrollingFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+ScrollingFrame.Parent = MainFrame
+
+-- Toggle Button for Main Frame
 local ToggleButton = Instance.new("TextButton")
 ToggleButton.Size = UDim2.new(0.15, 0, 0.1, 0)
 ToggleButton.Position = UDim2.new(0.05, 0, 0.05, 0)
-ToggleButton.Text = "Alien"
-ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-ToggleButton.TextColor3 = Color3.new(0, 0, 0, 0)
+ToggleButton.Text = "Load Toggle Button"
+ToggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.Font = Enum.Font.SourceSansBold
 ToggleButton.TextSize = 20
 ToggleButton.Parent = ScreenGui
@@ -36,76 +45,83 @@ ToggleButton.TextScaled = true
 -- Toggle functionality for Main Frame
 ToggleButton.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
+
+    -- Create Puur Toggle Button
+    if not MainFrame:FindFirstChild("PuurToggleButton") then
+        local PuurToggleButton = Instance.new("TextButton")
+        PuurToggleButton.Name = "PuurToggleButton"
+        PuurToggleButton.Size = UDim2.new(0.1, 0, 0.05, 0)
+        PuurToggleButton.Position = UDim2.new(0.55, 0, 0.2, 0)
+        PuurToggleButton.Text = "Puur ON"
+        PuurToggleButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+        PuurToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        PuurToggleButton.Font = Enum.Font.SourceSansBold
+        PuurToggleButton.TextSize = 25
+        PuurToggleButton.Parent = MainFrame
+
+        local camlockEnabled = false
+        PuurToggleButton.MouseButton1Click:Connect(function()
+            camlockEnabled = not camlockEnabled
+            PuurToggleButton.Text = camlockEnabled and "Puur OFF" or "Puur ON"
+            -- Add your camlock functionality here
+        end)
+    end
 end)
 
 -- Helper function to create section labels
-local function createSectionLabel(text, position)
+local function createSectionLabel(text, position, parent)
     local label = Instance.new("TextLabel")
     label.Text = text
     label.Size = UDim2.new(0.9, 0, 0.05, 0)
     label.Position = position
-    label.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    label.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 18
-    label.Parent = MainFrame
+    label.Parent = parent
 end
 
 -- Helper function to create toggle buttons
-local function createToggleButton(text, position, callback)
+local function createToggleButton(text, position, parent, callback)
     local button = Instance.new("TextButton")
     button.Text = text
     button.Size = UDim2.new(0.9, 0, 0.05, 0)
     button.Position = position
-    button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    button.TextColor3 = Color3.new(1, 1, 1)
+    button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.Font = Enum.Font.SourceSansBold
     button.TextSize = 16
-    button.Parent = MainFrame
+    button.Parent = parent
 
     local enabled = false
     button.MouseButton1Click:Connect(function()
         enabled = not enabled
-        button.BackgroundColor3 = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        button.BackgroundColor3 = enabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(35, 35, 35)
         callback(enabled)
     end)
 end
 
--- TARGET AIM SECTION
-createSectionLabel("Target Aim", UDim2.new(0.05, 0, 0.05, 0))
-
--- Target Aim Toggle
-local TargetAimEnabled = false
-createToggleButton("Toggle Target Aim", UDim2.new(0.05, 0, 0.12, 0), function(state)
-    TargetAimEnabled = state
-end)
-
--- Prediction Slider
-local Prediction = 0.1
-local JumpOffset = 0
-local Smoothness = 0.1
-
--- GUI for Prediction, Jump Offset, and Smoothness
-local function createSlider(labelText, position, min, max, default, callback)
+-- Helper function to create sliders
+local function createSlider(labelText, position, default, parent, callback)
     local label = Instance.new("TextLabel")
     label.Text = labelText .. ": " .. default
     label.Size = UDim2.new(0.9, 0, 0.05, 0)
     label.Position = position
-    label.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    label.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.SourceSansBold
     label.TextSize = 14
-    label.Parent = MainFrame
+    label.Parent = parent
 
     local slider = Instance.new("TextBox")
     slider.Size = UDim2.new(0.3, 0, 0.05, 0)
     slider.Position = position + UDim2.new(0.6, 0, 0, 0)
     slider.Text = tostring(default)
-    slider.Parent = MainFrame
+    slider.Parent = parent
 
     slider.FocusLost:Connect(function()
         local value = tonumber(slider.Text)
-        if value and value >= min and value <= max then
+        if value then
             label.Text = labelText .. ": " .. value
             callback(value)
         else
@@ -114,45 +130,69 @@ local function createSlider(labelText, position, min, max, default, callback)
     end)
 end
 
+-- TARGET AIM SECTION
+createSectionLabel("Target Aim", UDim2.new(0.05, 0, 0.05, 0), ScrollingFrame)
+
+-- Target Aim Toggle
+local TargetAimEnabled = false
+createToggleButton("Target Aim", UDim2.new(0.05, 0, 0.12, 0), ScrollingFrame, function(state)
+    TargetAimEnabled = state
+end)
+
 -- Prediction Slider
-createSlider("Prediction", UDim2.new(0.05, 0, 0.19, 0), 0, 1, Prediction, function(value)
+local Prediction = 0.1
+createSlider("Prediction", UDim2.new(0.05, 0, 0.19, 0), Prediction, ScrollingFrame, function(value)
     Prediction = value
 end)
 
 -- Jump Offset Slider
-createSlider("Jump Offset", UDim2.new(0.05, 0, 0.26, 0), -10, 10, JumpOffset, function(value)
+local JumpOffset = 0
+createSlider("Jump Offset", UDim2.new(0.05, 0, 0.26, 0), JumpOffset, ScrollingFrame, function(value)
     JumpOffset = value
 end)
 
 -- Smoothness Slider
-createSlider("Smoothness", UDim2.new(0.05, 0, 0.33, 0), 0, 1, Smoothness, function(value)
+local Smoothness = 0.1
+createSlider("Smoothness", UDim2.new(0.05, 0, 0.33, 0), Smoothness, ScrollingFrame, function(value)
     Smoothness = value
 end)
 
--- Function to get closest target (excluding local player)
-local function getClosestTarget()
-    local closestDist, closestPlayer = math.huge, nil
-    for _, player in pairs(game.Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            local dist = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
-            if dist < closestDist then
-                closestDist = dist
-                closestPlayer = player
-            end
-        end
-    end
-    return closestPlayer
-end
+-- Thin Line Separator
+local ThinLine = Instance.new("Frame")
+ThinLine.Size = UDim2.new(0.9, 0, 0.01, 0)
+ThinLine.Position = UDim2.new(0.05, 0, 0.39, 0)
+ThinLine.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Slightly lighter than the background
+ThinLine.Parent = ScrollingFrame
 
--- Target Aim Logic
-RunService.RenderStepped:Connect(function()
-    if TargetAimEnabled then
-        local target = getClosestTarget()
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local aimPos = target.Character.HumanoidRootPart.Position + Vector3.new(0, JumpOffset, 0) + target.Character.HumanoidRootPart.Velocity * Prediction
-            local currentPos = LocalPlayer.Character.HumanoidRootPart.CFrame.Position
-            local smoothAim = currentPos:Lerp(aimPos, Smoothness)
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(smoothAim, aimPos)
-        end
-    end
+-- KILLBOT SECTION
+createSectionLabel("Killbot", UDim2.new(0.05, 0, 0.42, 0), ScrollingFrame)
+
+-- Target Strafe Toggle
+local TargetStrafeEnabled = false
+createToggleButton("Target Strafe", UDim2.new(0.05, 0, 0.49, 0), ScrollingFrame, function(state)
+    TargetStrafeEnabled = state
 end)
+
+-- Height Slider
+local Height = 0
+createSlider("Height", UDim2.new(0.05, 0, 0.56, 0), Height, ScrollingFrame, function(value)
+    Height = value
+end)
+
+-- Distance Slider
+local Distance = 0
+createSlider("Distance", UDim2.new(0.05, 0, 0.63, 0), Distance, ScrollingFrame, function(value)
+    Distance = value
+end)
+
+-- Speed Slider
+local Speed = 0
+createSlider("Speed", UDim2.new(0.05, 0, 0.70, 0), Speed, ScrollingFrame, function(value)
+    Speed = value
+end)
+
+-- Function to get closest target in camera view
+local function getClosestTargetInCameraView()
+    local closestDist, closestPlayer = math.huge, nil
+    local camera = workspace.CurrentCamera
+    for
